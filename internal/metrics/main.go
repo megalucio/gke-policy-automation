@@ -16,7 +16,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
 
 	informers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -94,23 +93,8 @@ func ListPods(ctx context.Context, client dynamic.Interface, namespace string) (
 	return list.Items, nil
 }
 
-func countResources(ctx context.Context, client dynamic.Interface, namespace string) (int, error) {
-	var counter int
-
-	list, err := client.Resource(schema.GroupVersionResource{
-		Group:    "",
-		Version:  "v1",
-		Resource: "pods",
-	}).Namespace(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		logs.Criticalln(err)
-		return 0, err
-	}
-	counter = len(list.Items)
-	return counter, nil
-}
-
-func findResources(kubeconfigPath *string) {
+// FindResourcesGroups extracts Resource groups and names from the APIs
+func findResourcesGroups(kubeconfigPath *string) {
 	kubeconfig, _ := ioutil.ReadFile(*kubeconfigPath)
 	restconfig, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
 	if err != nil {
@@ -118,21 +102,24 @@ func findResources(kubeconfigPath *string) {
 		os.Exit(1)
 	}
 	dc := discovery.NewDiscoveryClientForConfigOrDie(restconfig)
-	groupResources, err := restmapper.GetAPIGroupResources(dc)
+	apiGroup, apiResources, err := dc.ServerGroupsAndResources()
 	if err != nil {
 		logs.Criticalln(err)
-		os.Exit(1)
 	}
-	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
-	mapping, err := mapper.RESTMapping(schema.ParseGroupKind("Deployment.apps"), "v1")
-	if err != nil {
-		logs.Criticalln(err)
-		os.Exit(1)
-	}
-	fmt.Println(mapping.Resource)
-}
 
-// out of band CRDs
+	fmt.Println("apiGroup -------------------- ")
+	for i := 0; i < len(apiGroup); i++ {
+		println(apiGroup[i].Name)
+	}
+
+	fmt.Printf("ApiResourcesList count: %d\n", len(apiResources))
+	for i := 0; i < len(apiResources); i++ {
+		fmt.Printf("Group %s resources: %d\n", apiResources[i].GroupVersion, len(apiResources[i].APIResources))
+		for k := 0; k < len(apiResources[i].APIResources); k++ {
+			fmt.Printf("     %s\n", apiResources[i].APIResources[k].Name)
+		}
+	}
+}
 
 func main() {
 	// ctx := context.Background()
@@ -147,5 +134,5 @@ func main() {
 	// 	os.Exit(1)
 	// }
 	// logs.Printf("Objects found: %d\n", size)
-	findResources(getKubeConfigPath())
+	findResourcesGroups(getKubeConfigPath())
 }
