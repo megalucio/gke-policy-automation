@@ -39,9 +39,10 @@ resource "google_project_iam_member" "run_invoker" {
 }
 
 resource "google_cloud_run_v2_job" "gke-policy-automation" {
-  project  = data.google_project.project.project_id
-  name     = var.job_name
-  location = var.region
+  project      = data.google_project.project.project_id
+  name         = var.job_name
+  location     = var.region
+  launch_stage = "BETA"
 
   template {
     template {
@@ -72,4 +73,7 @@ resource "google_cloud_run_v2_job" "gke-policy-automation" {
       }
     }
   }
+  depends_on = [
+    google_project_service.project
+  ]
 }
