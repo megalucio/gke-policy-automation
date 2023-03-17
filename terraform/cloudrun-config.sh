@@ -31,18 +31,6 @@ varCheck() {
     echo -e "${RED}[ERROR] GKE_PA_PROJECT_ID variable is not set${NC}"
     return 1
   fi
-  if [ -z "$GKE_PA_JOB_NAME" ]; then
-    echo -e "${RED}[ERROR] GKE_PA_JOB_NAME variable is not set${NC}"
-    return 1
-  fi
-  if [ -z "$GKE_PA_SA_EMAIL" ]; then
-    echo -e "${RED}[ERROR] GKE_PA_SA_EMAIL variable is not set${NC}"
-    return 1
-  fi
-  if [ -z "$GKE_PA_SECRET_NAME" ]; then
-    echo -e "${RED}[ERROR] GKE_PA_SECRET_NAME variable is not set${NC}"
-    return 1
-  fi
 }
 
 cmdCheck() {
@@ -94,17 +82,6 @@ runAndCheck "gcloud auth configure-docker ${GKE_PA_REGION}-docker.pkg.dev"
 echo -e "${WHT}[INFO] Pushing GKE Policy Automation image to the Artifact Registry${NC}"
 runAndCheck "docker tag ghcr.io/google/gke-policy-automation:latest ${GKE_PA_REGION}-docker.pkg.dev/${GKE_PA_PROJECT_ID}/gke-policy-automation/gke-policy-automation:latest"
 runAndCheck "docker push ${GKE_PA_REGION}-docker.pkg.dev/${GKE_PA_PROJECT_ID}/gke-policy-automation/gke-policy-automation:latest"
-
-echo -e "${WHT}[INFO] Creating Cloud Run Job${NC}"
-runAndCheck "gcloud beta run jobs create ${GKE_PA_JOB_NAME} \
-  --image ${GKE_PA_REGION}-docker.pkg.dev/${GKE_PA_PROJECT_ID}/gke-policy-automation/gke-policy-automation:latest \
-  --command=/gke-policy,check \
-  --args=-c,/etc/secrets/config.yaml \
-  --set-secrets /etc/secrets/config.yaml=${GKE_PA_SECRET_NAME}:latest \
-  --service-account=${GKE_PA_SA_EMAIL} \
-  --set-env-vars=GKE_POLICY_LOG=INFO \
-  --region=${GKE_PA_REGION} \
-  --project=${GKE_PA_PROJECT_ID}"
 
 if [ $? -eq 0 ]; then
   echo -e "${WHT}[INFO] Script was executed successfuly${NC}"

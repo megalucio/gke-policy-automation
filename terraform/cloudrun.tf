@@ -37,3 +37,39 @@ resource "google_project_iam_member" "run_invoker" {
   role    = "roles/run.invoker"
   member  = "serviceAccount:${google_service_account.sa.email}"
 }
+
+resource "google_cloud_run_v2_job" "gke-policy-automation" {
+  project  = data.google_project.project.project_id
+  name     = var.job_name
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.sa.email
+      containers {
+        image   = "${var.region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.mirror.name}/gke-policy-automation:latest"
+        command = ["/gke-policy", "check"]
+        args    = ["-c", "/etc/secrets/config.yaml"]
+        env {
+          name  = "GKE_POLICY_LOG"
+          value = "INFO"
+        }
+        volume_mounts {
+          name       = "configuration"
+          mount_path = "/etc/secrets"
+        }
+      }
+      volumes {
+        name = "configuration"
+        secret {
+          secret = google_secret_manager_secret.config.id
+          items {
+            path    = "config.yaml"
+            version = "latest"
+            mode    = 292 #0444
+          }
+        }
+      }
+    }
+  }
+}

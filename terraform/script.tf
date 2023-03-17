@@ -19,9 +19,6 @@ resource "local_file" "envs" {
   content  = <<EOT
 export GKE_PA_REGION=${var.region}
 export GKE_PA_PROJECT_ID=${data.google_project.project.project_id}
-export GKE_PA_JOB_NAME=${var.job_name}
-export GKE_PA_SA_EMAIL=${google_service_account.sa.email}
-export GKE_PA_SECRET_NAME=${google_secret_manager_secret.config.secret_id}
   EOT
 }
 

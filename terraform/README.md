@@ -100,20 +100,6 @@ Push container image to Artifact Registry and create Cloud Run job:
      docker push ${GKE_PA_REGION}-docker.pkg.dev/${GKE_PA_PROJECT_ID}/gke-policy-automation/gke-policy-automation:latest
      ```
 
-   * Create Cloud Run job
-
-     ```sh
-     gcloud beta run jobs create ${GKE_PA_JOB_NAME} \
-       --image ${GKE_PA_REGION}-docker.pkg.dev/${GKE_PA_PROJECT_ID}/gke-policy-automation/gke-policy-automation:latest\
-       --command=/gke-policy,check \
-       --args=-c,/etc/secrets/config.yaml \
-       --set-secrets /etc/secrets/config.yaml=${GKE_PA_SECRET_NAME}:latest \
-       --service-account=${GKE_PA_SA_EMAIL} \
-       --set-env-vars=GKE_POLICY_LOG=INFO \
-       --region=${GKE_PA_REGION} \
-       --project=${GKE_PA_PROJECT_ID}"
-     ```
-
 ## What happens behind the scenes
 
 The Terraform script within this folder enables all required APIs for you and creates necessary
